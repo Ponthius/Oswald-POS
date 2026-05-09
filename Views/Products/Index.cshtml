@@ -1,0 +1,121 @@
+@model List<Oswald_POS.Models.Product>
+
+@{
+    ViewData["Title"] = "Products";
+    var categories = ViewBag.Categories as List<Oswald_POS.Models.Category>;
+}
+
+<style>
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(4,1fr);
+        gap: 20px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 8px 20px rgba(0,0,0,.08);
+    }
+
+    .top {
+        height: 140px;
+        background: linear-gradient(135deg,#4f46e5,#7c3aed);
+    }
+
+    .body {
+        padding: 20px;
+    }
+
+    .price {
+        color: #16a34a;
+        font-weight: bold;
+        font-size: 20px;
+    }
+
+    .stock {
+        margin-top: 10px;
+        background: #e5e7eb;
+        height: 12px;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .fill {
+        height: 100%;
+        background: #16a34a;
+    }
+
+    .form-card {
+        background: white;
+        padding: 25px;
+        border-radius: 20px;
+        margin-bottom: 25px;
+    }
+
+    input, select, button {
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        margin-bottom: 10px;
+    }
+
+    button {
+        background: #4f46e5;
+        color: white;
+        border: none;
+    }
+</style>
+
+<div class="form-card">
+    <h2>Add Product</h2>
+
+    <form method="post" action="/Products/Create">
+
+        <input name="Name" placeholder="Product Name" required />
+
+        <input name="Price" type="number" step="0.01" placeholder="Price" required />
+
+        <input name="StockQuantity" type="number" placeholder="Stock Quantity" required />
+
+        <select name="CategoryId" required>
+            <option value="">Select Category</option>
+
+            @foreach(var cat in categories)
+            {
+                <option value="@cat.Id">@cat.Name</option>
+            }
+        </select>
+
+        <button type="submit">Save Product</button>
+
+    </form>
+</div>
+
+<div class="grid">
+    @foreach(var item in Model)
+    {
+        <div class="card">
+            <div class="top"></div>
+
+            <div class="body">
+                <h3>@item.Name</h3>
+
+                <p>@item.Category?.Name</p>
+
+                <div class="price">
+                    UGX @item.Price
+                </div>
+
+                <p>Stock: @item.StockQuantity</p>
+
+                <div class="stock">
+                    <div class="fill"
+                         style="width:@(item.StockQuantity > 100 ? 100 : item.StockQuantity)%">
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,162 @@
+@model Oswald_POS.Models.Sale
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>@Model.ReceiptNumber - Oswald POS</title>
+
+    <style>
+        body {
+            font-family: Consolas, monospace;
+            background: #e5e7eb;
+            padding: 30px;
+        }
+
+        .receipt {
+            width: 340px;
+            background: white;
+            padding: 20px;
+            margin: auto;
+            box-shadow: 0 10px 35px rgba(0,0,0,.2);
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .line {
+            border-top: 1px dashed #111;
+            margin: 12px 0;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+        }
+
+        .total {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .actions {
+            width: 340px;
+            margin: 20px auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .actions a,
+        .actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 6px;
+            font-family: Arial;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .print {
+            background: #16a34a;
+            color: white;
+        }
+
+        .download {
+            background: #111827;
+            color: white;
+        }
+
+        .back {
+            background: #2563eb;
+            color: white;
+        }
+
+        @@media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .actions {
+                display: none;
+            }
+
+            .receipt {
+                box-shadow: none;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="receipt">
+        <div class="center">
+            <h2>OSWALD POS</h2>
+            <p>Mini Sales Receipt</p>
+        </div>
+
+        <div class="line"></div>
+
+        <p>Receipt: @Model.ReceiptNumber</p>
+        <p>Date: @Model.SaleDate.ToString("dd MMM yyyy HH:mm")</p>
+        <p>Customer: @(Model.Customer?.FullName ?? "Walk-in Customer")</p>
+
+        <div class="line"></div>
+
+        @foreach (var item in Model.SaleItems)
+        {
+            <div>
+                <strong>@item.Product?.Name</strong>
+                <div class="row">
+                    <span>@item.Quantity x UGX @item.UnitPrice.ToString("N0")</span>
+                    <span>UGX @item.TotalPrice.ToString("N0")</span>
+                </div>
+            </div>
+        }
+
+        <div class="line"></div>
+
+        <div class="row total">
+            <span>Total</span>
+            <span>UGX @Model.TotalAmount.ToString("N0")</span>
+        </div>
+
+        <div class="row">
+            <span>Paid</span>
+            <span>UGX @Model.AmountPaid.ToString("N0")</span>
+        </div>
+
+        <div class="row">
+            <span>Change</span>
+            <span>UGX @Model.Change.ToString("N0")</span>
+        </div>
+
+        <div class="row">
+            <span>Payment</span>
+            <span>@Model.PaymentMethod</span>
+        </div>
+
+        <div class="line"></div>
+
+        <div class="center">
+            <p>Thank you for shopping with us.</p>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="print" onclick="window.print()">Print</button>
+        <a class="download" href="/Sales/DownloadReceipt/@Model.Id">Download</a>
+        <a class="back" href="/Sales">New Sale</a>
+    </div>
+
+</body>
+</html>

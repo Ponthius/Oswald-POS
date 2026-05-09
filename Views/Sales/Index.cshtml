@@ -1,0 +1,610 @@
+@using System.Globalization
+@model List<Oswald_POS.Models.Product>
+
+@{
+    ViewData["Title"] = "POS Sales";
+    var categories = ViewBag.Categories as List<Oswald_POS.Models.Category>;
+    var customers = ViewBag.Customers as List<Oswald_POS.Models.Customer>;
+}
+
+<style>
+    .pos-shell {
+        display: grid;
+        grid-template-columns: 1.8fr .9fr;
+        gap: 18px;
+    }
+
+    .pos-panel {
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #dbe1ea;
+        box-shadow: 0 8px 24px rgba(15,23,42,.06);
+    }
+
+    .pos-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+    }
+
+    .search-row {
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        gap: 12px;
+        padding: 14px;
+    }
+
+    .search-row input,
+    .search-row select {
+        padding: 13px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 15px;
+    }
+
+    .product-grid {
+        padding: 14px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        max-height: 620px;
+        overflow-y: auto;
+    }
+
+    .product-tile {
+        border: 1px solid #dbe1ea;
+        border-radius: 8px;
+        background: #ffffff;
+        cursor: pointer;
+        overflow: hidden;
+        transition: .15s;
+    }
+
+    .product-tile:hover {
+        border-color: #2563eb;
+        box-shadow: 0 8px 20px rgba(37,99,235,.16);
+        transform: translateY(-2px);
+    }
+
+    .tile-color {
+        height: 8px;
+    }
+
+    .tile-body {
+        padding: 12px;
+    }
+
+    .tile-name {
+        font-weight: 700;
+        color: #0f172a;
+        min-height: 38px;
+    }
+
+    .tile-category {
+        color: #64748b;
+        font-size: 13px;
+        margin: 6px 0;
+    }
+
+    .tile-price {
+        font-weight: 800;
+        color: #047857;
+        font-size: 17px;
+    }
+
+    .tile-stock {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #475569;
+    }
+
+    .cart-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .cart-table th {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 12px;
+        text-align: left;
+        padding: 10px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .cart-table td {
+        padding: 10px;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 14px;
+    }
+
+    .qty-btn {
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        width: 28px;
+        height: 28px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .remove-btn {
+        background: #fee2e2;
+        color: #b91c1c;
+        border: none;
+        border-radius: 5px;
+        padding: 6px 8px;
+        cursor: pointer;
+    }
+
+    .cart-body {
+        min-height: 330px;
+        max-height: 430px;
+        overflow-y: auto;
+    }
+
+    .cart-footer {
+        border-top: 1px solid #e5e7eb;
+        padding: 16px;
+        background: #f8fafc;
+    }
+
+    .summary-line {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        color: #334155;
+    }
+
+    .grand-total {
+        font-size: 26px;
+        font-weight: 900;
+        color: #0f172a;
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 14px;
+    }
+
+    .btn {
+        border: none;
+        border-radius: 6px;
+        padding: 14px;
+        cursor: pointer;
+        font-weight: 800;
+        font-size: 15px;
+    }
+
+    .btn-pay {
+        background: #16a34a;
+        color: white;
+    }
+
+    .btn-clear {
+        background: #ef4444;
+        color: white;
+    }
+
+    .empty {
+        text-align: center;
+        color: #64748b;
+        padding: 50px 20px;
+    }
+
+    .modal-bg {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15,23,42,.65);
+        z-index: 99;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal {
+        width: 430px;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 25px 80px rgba(0,0,0,.3);
+    }
+
+    .modal-head {
+        padding: 16px;
+        background: #111827;
+        color: white;
+        font-weight: 800;
+    }
+
+    .modal-body {
+        padding: 18px;
+    }
+
+    .modal-body label {
+        display: block;
+        margin-top: 12px;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .modal-body input,
+    .modal-body select {
+        width: 100%;
+        padding: 13px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        margin-top: 6px;
+        box-sizing: border-box;
+    }
+
+    .change-box {
+        background: #ecfdf5;
+        color: #047857;
+        padding: 13px;
+        border-radius: 6px;
+        font-weight: 900;
+        margin-top: 12px;
+    }
+
+    .modal-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 16px;
+        background: #f8fafc;
+    }
+
+    .btn-cancel {
+        background: #e5e7eb;
+        color: #111827;
+    }
+
+    .btn-complete {
+        background: #2563eb;
+        color: white;
+    }
+
+    @@media(max-width: 1100px) {
+        .pos-shell {
+            grid-template-columns: 1fr;
+        }
+
+        .product-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<div class="pos-shell">
+
+    <section class="pos-panel">
+        <div class="pos-header">
+            <strong>Product Menu</strong>
+            <span>@Model.Count items available</span>
+        </div>
+
+        <div class="search-row">
+            <input id="searchInput" placeholder="Search product..." onkeyup="filterProducts()" />
+
+            <select id="categoryFilter" onchange="filterProducts()">
+                <option value="">All Categories</option>
+                @foreach (var category in categories)
+                {
+                    <option value="@category.Name">@category.Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="product-grid" id="productGrid">
+            @foreach (var item in Model)
+            {
+                var color = item.Category?.Color ?? "#2563eb";
+                var priceText = item.Price.ToString("0.00", CultureInfo.InvariantCulture);
+
+                <div class="product-tile"
+                     data-name="@item.Name.ToLower()"
+                     data-category="@item.Category?.Name"
+                     onclick="addToCart(@item.Id, '@item.Name', @priceText, @item.StockQuantity)">
+
+                    <div class="tile-color" style="background:@color"></div>
+
+                    <div class="tile-body">
+                        <div class="tile-name">@item.Name</div>
+                        <div class="tile-category">@item.Category?.Name</div>
+                        <div class="tile-price">UGX @item.Price.ToString("N0")</div>
+                        <div class="tile-stock">Stock: @item.StockQuantity</div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <aside class="pos-panel">
+        <div class="pos-header">
+            <strong>Current Sale</strong>
+            <span id="itemCount">0 items</span>
+        </div>
+
+        <div class="cart-body">
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="cartItems">
+                    <tr>
+                        <td colspan="4" class="empty">No products selected.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="cart-footer">
+            <div class="summary-line">
+                <span>Subtotal</span>
+                <strong>UGX <span id="subtotal">0</span></strong>
+            </div>
+
+            <div class="summary-line grand-total">
+                <span>Total</span>
+                <span>UGX <span id="total">0</span></span>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-clear" onclick="clearCart()">Clear</button>
+                <button class="btn btn-pay" onclick="openPayment()">Payment</button>
+            </div>
+        </div>
+    </aside>
+
+</div>
+
+<div class="modal-bg" id="paymentModal">
+    <div class="modal">
+        <div class="modal-head">
+            Complete Payment
+        </div>
+
+        <div class="modal-body">
+            <div class="summary-line grand-total">
+                <span>Total</span>
+                <span>UGX <span id="modalTotal">0</span></span>
+            </div>
+
+            <label>Customer</label>
+            <select id="customerId">
+                <option value="">Walk-in Customer</option>
+                @foreach (var customer in customers)
+                {
+                    <option value="@customer.Id">@customer.FullName</option>
+                }
+            </select>
+
+            <label>Payment Method</label>
+            <select id="paymentMethod">
+                <option value="Cash">Cash</option>
+                <option value="Card">Card</option>
+                <option value="Credit">Credit</option>
+            </select>
+
+            <label>Amount Paid</label>
+            <input id="amountPaid" type="number" min="0" value="0" oninput="calculateChange()" />
+
+            <div class="change-box">
+                Change: UGX <span id="changeAmount">0</span>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-cancel" onclick="closePayment()">Cancel</button>
+            <button class="btn btn-complete" onclick="completeSale()">Complete Sale</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cart = [];
+
+    function money(value) {
+        return Number(value).toLocaleString();
+    }
+
+    function addToCart(id, name, price, stock) {
+        let existing = cart.find(x => x.productId === id);
+
+        if (existing) {
+            if (existing.quantity >= existing.stock) {
+                alert("No more stock available for " + name);
+                return;
+            }
+
+            existing.quantity++;
+        } else {
+            cart.push({
+                productId: id,
+                name: name,
+                price: Number(price),
+                quantity: 1,
+                stock: stock
+            });
+        }
+
+        renderCart();
+    }
+
+    function increaseQty(id) {
+        let item = cart.find(x => x.productId === id);
+
+        if (!item) return;
+
+        if (item.quantity >= item.stock) {
+            alert("Stock limit reached.");
+            return;
+        }
+
+        item.quantity++;
+        renderCart();
+    }
+
+    function decreaseQty(id) {
+        let item = cart.find(x => x.productId === id);
+
+        if (!item) return;
+
+        item.quantity--;
+
+        if (item.quantity <= 0) {
+            cart = cart.filter(x => x.productId !== id);
+        }
+
+        renderCart();
+    }
+
+    function removeItem(id) {
+        cart = cart.filter(x => x.productId !== id);
+        renderCart();
+    }
+
+    function clearCart() {
+        cart = [];
+        renderCart();
+    }
+
+    function getTotal() {
+        return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    }
+
+    function renderCart() {
+        let tbody = document.getElementById("cartItems");
+        let total = getTotal();
+        let count = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+        document.getElementById("subtotal").innerText = money(total);
+        document.getElementById("total").innerText = money(total);
+        document.getElementById("itemCount").innerText = count + " items";
+
+        if (cart.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="empty">No products selected.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = "";
+
+        cart.forEach(item => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>
+                        <strong>${item.name}</strong><br>
+                        <small>UGX ${money(item.price)}</small>
+                    </td>
+                    <td>
+                        <button class="qty-btn" onclick="decreaseQty(${item.productId})">-</button>
+                        ${item.quantity}
+                        <button class="qty-btn" onclick="increaseQty(${item.productId})">+</button>
+                    </td>
+                    <td>UGX ${money(item.price * item.quantity)}</td>
+                    <td>
+                        <button class="remove-btn" onclick="removeItem(${item.productId})">X</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function openPayment() {
+        if (cart.length === 0) {
+            alert("Cart is empty.");
+            return;
+        }
+
+        let total = getTotal();
+
+        document.getElementById("modalTotal").innerText = money(total);
+        document.getElementById("amountPaid").value = total;
+        calculateChange();
+
+        document.getElementById("paymentModal").style.display = "flex";
+    }
+
+    function closePayment() {
+        document.getElementById("paymentModal").style.display = "none";
+    }
+
+    function calculateChange() {
+        let total = getTotal();
+        let paid = Number(document.getElementById("amountPaid").value || 0);
+        let change = paid > total ? paid - total : 0;
+
+        document.getElementById("changeAmount").innerText = money(change);
+    }
+
+    function completeSale() {
+        let total = getTotal();
+        let paid = Number(document.getElementById("amountPaid").value || 0);
+        let method = document.getElementById("paymentMethod").value;
+        let customerId = document.getElementById("customerId").value;
+
+        if (method !== "Credit" && paid < total) {
+            alert("Amount paid is less than total. Use Credit if customer will pay later.");
+            return;
+        }
+
+        fetch("/Sales/CompleteSale", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                items: cart.map(x => ({
+                    productId: x.productId,
+                    quantity: x.quantity
+                })),
+                amountPaid: paid,
+                paymentMethod: method,
+                customerId: customerId === "" ? null : Number(customerId)
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(error => {
+                    throw new Error(error.message);
+                });
+            }
+
+            return response.json();
+        })
+        .then(data => {
+            alert(data.message);
+            window.location.href = data.receiptUrl;
+        })
+        .catch(error => {
+            alert(error.message);
+        });
+    }
+
+    function filterProducts() {
+        let search = document.getElementById("searchInput").value.toLowerCase();
+        let category = document.getElementById("categoryFilter").value;
+        let products = document.querySelectorAll(".product-tile");
+
+        products.forEach(product => {
+            let name = product.getAttribute("data-name");
+            let productCategory = product.getAttribute("data-category");
+
+            let matchesSearch = name.includes(search);
+            let matchesCategory = category === "" || productCategory === category;
+
+            product.style.display = matchesSearch && matchesCategory ? "block" : "none";
+        });
+    }
+</script>

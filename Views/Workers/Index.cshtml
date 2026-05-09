@@ -1,0 +1,202 @@
+@model List<Oswald_POS.Models.Worker>
+
+@{
+    ViewData["Title"] = "Workers";
+}
+
+<style>
+    .page-grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 20px;
+    }
+
+    .panel {
+        background: white;
+        border-radius: 10px;
+        padding: 22px;
+        border: 1px solid #dbe1ea;
+        box-shadow: 0 8px 24px rgba(15,23,42,.06);
+    }
+
+    input, select, button {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 7px;
+        border: 1px solid #cbd5e1;
+    }
+
+    button {
+        border: none;
+        background: #2563eb;
+        color: white;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        background: #f8fafc;
+        color: #475569;
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .role {
+        background: #eef2ff;
+        color: #3730a3;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 12px;
+    }
+
+    .actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .small-btn {
+        width: auto;
+        padding: 8px 10px;
+        margin: 0;
+    }
+
+    .delete {
+        background: #dc2626;
+    }
+
+    .protected {
+        color: #64748b;
+        font-weight: 700;
+    }
+
+    @@media(max-width: 1000px) {
+        .page-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="page-grid">
+    <div class="panel">
+        <h2>Add Worker</h2>
+
+        <form method="post" action="/Workers/Create">
+            <input name="FullName" placeholder="Full name" required />
+            <input name="Username" placeholder="Username" required />
+            <input name="Password" placeholder="Password" required />
+
+            <select name="Role">
+                <option value="Cashier">Cashier</option>
+                <option value="Manager">Manager</option>
+                <option value="Admin">Admin</option>
+            </select>
+
+            <button type="submit">Save Worker</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h2>System Workers</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var worker in Model)
+                {
+                    var updateFormId = "updateWorker" + worker.Id;
+
+                    <tr>
+                        <td>
+                            <input form="@updateFormId" type="hidden" name="Id" value="@worker.Id" />
+                            <input form="@updateFormId" name="FullName" value="@worker.FullName" />
+                        </td>
+
+                        <td>
+                            <input form="@updateFormId" name="Username" value="@worker.Username" />
+                        </td>
+
+                        <td>
+                            <input form="@updateFormId" name="Password" value="@worker.Password" />
+                        </td>
+
+                        <td>
+                            <select form="@updateFormId" name="Role">
+                                @if (worker.Role == "Cashier")
+                                {
+                                    <option value="Cashier" selected>Cashier</option>
+                                }
+                                else
+                                {
+                                    <option value="Cashier">Cashier</option>
+                                }
+
+                                @if (worker.Role == "Manager")
+                                {
+                                    <option value="Manager" selected>Manager</option>
+                                }
+                                else
+                                {
+                                    <option value="Manager">Manager</option>
+                                }
+
+                                @if (worker.Role == "Admin")
+                                {
+                                    <option value="Admin" selected>Admin</option>
+                                }
+                                else
+                                {
+                                    <option value="Admin">Admin</option>
+                                }
+                            </select>
+
+                            <span class="role">@worker.Role</span>
+                        </td>
+
+                        <td>
+                            <div class="actions">
+                                <form id="@updateFormId" method="post" action="/Workers/Update"></form>
+
+                                <button form="@updateFormId" class="small-btn" type="submit">Update</button>
+
+                                @if (worker.Username != "admin")
+                                {
+                                    <form method="post" action="/Workers/Delete/@worker.Id" onsubmit="return confirm('Delete this worker?')">
+                                        <button class="small-btn delete" type="submit">Delete</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="protected">Protected</span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
