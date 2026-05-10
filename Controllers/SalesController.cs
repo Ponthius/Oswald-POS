@@ -4,11 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Oswald_POS.Data;
 using Oswald_POS.Models;
 using Oswald_POS.ViewModels;
+using System.Security.Claims;
 using System.Text;
 
 namespace Oswald_POS.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Admin,Manager,Cashier")]
     public class SalesController : Controller
     {
         private readonly AppDbContext _context;
@@ -40,6 +41,14 @@ namespace Oswald_POS.Controllers
                 return BadRequest(new { message = "Cart is empty." });
             }
 
+            var workerIdClaim = User.FindFirst("WorkerId")?.Value;
+            int? workerId = null;
+
+            if (int.TryParse(workerIdClaim, out int parsedWorkerId))
+            {
+                workerId = parsedWorkerId;
+            }
+
             using var transaction = _context.Database.BeginTransaction();
 
             try
@@ -52,7 +61,8 @@ namespace Oswald_POS.Controllers
                     PaymentMethod = request.PaymentMethod,
                     AmountPaid = request.AmountPaid,
                     ReceiptNumber = "OSW-" + DateTime.Now.ToString("yyyyMMddHHmmss"),
-                    CustomerId = request.CustomerId
+                    CustomerId = request.CustomerId,
+                    WorkerId = workerId
                 };
 
                 foreach (var item in request.Items)
@@ -120,10 +130,12 @@ namespace Oswald_POS.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult History()
         {
             var sales = _context.Sales
                 .Include(s => s.Customer)
+                .Include(s => s.Worker)
                 .Include(s => s.SaleItems)
                 .ThenInclude(i => i.Product)
                 .OrderByDescending(s => s.SaleDate)
@@ -136,6 +148,7 @@ namespace Oswald_POS.Controllers
         {
             var sale = _context.Sales
                 .Include(s => s.Customer)
+                .Include(s => s.Worker)
                 .Include(s => s.SaleItems)
                 .ThenInclude(i => i.Product)
                 .FirstOrDefault(s => s.Id == id);
@@ -152,6 +165,7 @@ namespace Oswald_POS.Controllers
         {
             var sale = _context.Sales
                 .Include(s => s.Customer)
+                .Include(s => s.Worker)
                 .Include(s => s.SaleItems)
                 .ThenInclude(i => i.Product)
                 .FirstOrDefault(s => s.Id == id);
@@ -164,11 +178,14 @@ namespace Oswald_POS.Controllers
             var receipt = new StringBuilder();
 
             receipt.AppendLine("OSWALD POS");
+            receipt.AppendLine("Tel: 0700 000 000");
+            receipt.AppendLine("Location: Kampala, Uganda");
             receipt.AppendLine("Mini Receipt");
             receipt.AppendLine("-----------------------------");
             receipt.AppendLine($"Receipt: {sale.ReceiptNumber}");
             receipt.AppendLine($"Date: {sale.SaleDate}");
             receipt.AppendLine($"Customer: {sale.Customer?.FullName ?? "Walk-in Customer"}");
+            receipt.AppendLine($"Cashier: {sale.Worker?.FullName ?? "Unknown"}");
             receipt.AppendLine("-----------------------------");
 
             foreach (var item in sale.SaleItems)
@@ -191,6 +208,7 @@ namespace Oswald_POS.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult Void(int id)
         {
             var sale = _context.Sales

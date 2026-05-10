@@ -94,13 +94,14 @@
     .actions {
         display: flex;
         gap: 6px;
+        align-items: center;
     }
 </style>
 
 <div class="history-card">
     <div class="toolbar">
         <strong>All Sales</strong>
-        <input id="searchBox" placeholder="Search receipt, customer, payment..." onkeyup="filterTable()" />
+        <input id="searchBox" placeholder="Search receipt, customer, cashier, payment..." onkeyup="filterTable()" />
     </div>
 
     <table id="salesTable">
@@ -109,6 +110,7 @@
                 <th>Receipt</th>
                 <th>Date</th>
                 <th>Customer</th>
+                <th>Cashier</th>
                 <th>Payment</th>
                 <th>Total</th>
                 <th>Paid</th>
@@ -125,6 +127,7 @@
                     <td>@sale.ReceiptNumber</td>
                     <td>@sale.SaleDate.ToString("dd MMM yyyy HH:mm")</td>
                     <td>@(sale.Customer?.FullName ?? "Walk-in")</td>
+                    <td>@(sale.Worker?.FullName ?? "Unknown")</td>
                     <td>@sale.PaymentMethod</td>
                     <td>UGX @sale.TotalAmount.ToString("N0")</td>
                     <td>UGX @sale.AmountPaid.ToString("N0")</td>

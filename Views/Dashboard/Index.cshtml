@@ -132,6 +132,12 @@
         margin-bottom: 8px;
         display: flex;
         justify-content: space-between;
+        gap: 12px;
+    }
+
+    .low {
+        color: #dc2626;
+        font-weight: 900;
     }
 
     @@media(max-width: 1000px) {
@@ -235,6 +241,7 @@
                 <tr>
                     <th>Receipt</th>
                     <th>Customer</th>
+                    <th>Cashier</th>
                     <th>Total</th>
                     <th>Date</th>
                 </tr>
@@ -242,7 +249,7 @@
                 @if (!Model.RecentSales.Any())
                 {
                     <tr>
-                        <td colspan="4">No sales yet.</td>
+                        <td colspan="5">No sales yet.</td>
                     </tr>
                 }
                 else
@@ -254,6 +261,7 @@
                                 <a href="/Sales/Receipt/@sale.Id">@sale.ReceiptNumber</a>
                             </td>
                             <td>@(sale.Customer?.FullName ?? "Walk-in")</td>
+                            <td>@(sale.Worker?.FullName ?? "Unknown")</td>
                             <td>UGX @sale.TotalAmount.ToString("N0")</td>
                             <td>@sale.SaleDate.ToString("dd MMM yyyy HH:mm")</td>
                         </tr>
@@ -269,10 +277,19 @@
 
             <div class="quick-actions">
                 <a href="/Sales">Open POS Sales</a>
-                <a href="/Products">Manage Products</a>
-                <a href="/Categories">Manage Categories</a>
-                <a href="/Customers">Manage Customers</a>
-                <a href="/Sales/History">View Sales History</a>
+
+                @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                {
+                    <a href="/Products">Manage Products</a>
+                    <a href="/Categories">Manage Categories</a>
+                    <a href="/Customers">Manage Customers</a>
+                    <a href="/Sales/History">View Sales History</a>
+                }
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <a href="/Workers">Manage Workers</a>
+                }
             </div>
         </div>
 
@@ -288,8 +305,27 @@
                 @foreach (var product in Model.TopProducts)
                 {
                     <div class="product-pill">
+                        <strong>@product.ProductName</strong>
+                        <span>@product.QuantitySold sold</span>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="panel">
+            <h2>Low Stock Items</h2>
+
+            @if (!Model.LowStockItems.Any())
+            {
+                <p>No low stock items.</p>
+            }
+            else
+            {
+                @foreach (var product in Model.LowStockItems)
+                {
+                    <div class="product-pill">
                         <strong>@product.Name</strong>
-                        <span>Stock: @product.StockQuantity</span>
+                        <span class="low">@product.StockQuantity left</span>
                     </div>
                 }
             }

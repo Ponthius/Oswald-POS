@@ -27,6 +27,10 @@ namespace Oswald_POS.Models
 
         public Customer? Customer { get; set; }
 
+        public int? WorkerId { get; set; }
+
+        public Worker? Worker { get; set; }
+
         public List<SaleItem> SaleItems { get; set; } = new();
     }
 }

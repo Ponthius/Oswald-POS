@@ -18,6 +18,7 @@ namespace Oswald_POS.ViewModels
         public decimal SundaySales { get; set; }
 
         public List<Sale> RecentSales { get; set; } = new();
-        public List<Product> TopProducts { get; set; } = new();
+        public List<TopProductViewModel> TopProducts { get; set; } = new();
+        public List<Product> LowStockItems { get; set; } = new();
     }
 }

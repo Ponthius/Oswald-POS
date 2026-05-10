@@ -5,7 +5,7 @@ using Oswald_POS.Models;
 
 namespace Oswald_POS.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Admin,Manager")]
     public class CustomersController : Controller
     {
         private readonly AppDbContext _context;

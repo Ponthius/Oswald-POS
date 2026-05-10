@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Oswald_POS.Data;
-using Oswald_POS.Models;
 using Oswald_POS.ViewModels;
 
 namespace Oswald_POS.Controllers
@@ -35,21 +34,18 @@ namespace Oswald_POS.Controllers
                 .Where(s => !s.IsVoided && s.SaleDate >= startOfWeek && s.SaleDate < endOfWeek)
                 .ToList();
 
-            var saleItems = _context.SaleItems
+            var topProducts = _context.SaleItems
                 .Include(si => si.Product)
                 .Include(si => si.Sale)
                 .Where(si => si.Sale != null && !si.Sale.IsVoided)
-                .ToList();
-
-            var topProductIds = saleItems
-                .GroupBy(si => si.ProductId)
-                .OrderByDescending(g => g.Sum(x => x.Quantity))
+                .GroupBy(si => si.Product!.Name)
+                .Select(g => new TopProductViewModel
+                {
+                    ProductName = g.Key,
+                    QuantitySold = g.Sum(x => x.Quantity)
+                })
+                .OrderByDescending(x => x.QuantitySold)
                 .Take(5)
-                .Select(g => g.Key)
-                .ToList();
-
-            var topProducts = _context.Products
-                .Where(p => topProductIds.Contains(p.Id))
                 .ToList();
 
             var model = new DashboardViewModel
@@ -65,42 +61,30 @@ namespace Oswald_POS.Controllers
 
                 TotalCustomers = _context.Customers.Count(),
 
-                MondaySales = weeklySales
-                    .Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Monday)
-                    .Sum(s => s.TotalAmount),
-
-                TuesdaySales = weeklySales
-                    .Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Tuesday)
-                    .Sum(s => s.TotalAmount),
-
-                WednesdaySales = weeklySales
-                    .Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Wednesday)
-                    .Sum(s => s.TotalAmount),
-
-                ThursdaySales = weeklySales
-                    .Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Thursday)
-                    .Sum(s => s.TotalAmount),
-
-                FridaySales = weeklySales
-                    .Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Friday)
-                    .Sum(s => s.TotalAmount),
-
-                SaturdaySales = weeklySales
-                    .Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Saturday)
-                    .Sum(s => s.TotalAmount),
-
-                SundaySales = weeklySales
-                    .Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Sunday)
-                    .Sum(s => s.TotalAmount),
+                MondaySales = weeklySales.Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Monday).Sum(s => s.TotalAmount),
+                TuesdaySales = weeklySales.Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Tuesday).Sum(s => s.TotalAmount),
+                WednesdaySales = weeklySales.Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Wednesday).Sum(s => s.TotalAmount),
+                ThursdaySales = weeklySales.Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Thursday).Sum(s => s.TotalAmount),
+                FridaySales = weeklySales.Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Friday).Sum(s => s.TotalAmount),
+                SaturdaySales = weeklySales.Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Saturday).Sum(s => s.TotalAmount),
+                SundaySales = weeklySales.Where(s => s.SaleDate.DayOfWeek == DayOfWeek.Sunday).Sum(s => s.TotalAmount),
 
                 RecentSales = _context.Sales
                     .Include(s => s.Customer)
+                    .Include(s => s.Worker)
                     .Where(s => !s.IsVoided)
                     .OrderByDescending(s => s.SaleDate)
                     .Take(6)
                     .ToList(),
 
-                TopProducts = topProducts
+                TopProducts = topProducts,
+
+                LowStockItems = _context.Products
+                    .Include(p => p.Category)
+                    .Where(p => p.StockQuantity <= p.LowStockLevel)
+                    .OrderBy(p => p.StockQuantity)
+                    .Take(6)
+                    .ToList()
             };
 
             return View(model);

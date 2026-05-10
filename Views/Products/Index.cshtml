@@ -2,120 +2,250 @@
 
 @{
     ViewData["Title"] = "Products";
-    var categories = ViewBag.Categories as List<Oswald_POS.Models.Category>;
+    var categories = ViewBag.Categories as List<Oswald_POS.Models.Category> ?? new();
 }
 
 <style>
-    .grid {
+    .page-grid {
         display: grid;
-        grid-template-columns: repeat(4,1fr);
+        grid-template-columns: 370px 1fr;
         gap: 20px;
     }
 
-    .card {
+    .panel {
         background: white;
-        border-radius: 20px;
+        border-radius: 10px;
+        padding: 22px;
+        border: 1px solid #dbe1ea;
+        box-shadow: 0 8px 24px rgba(15,23,42,.06);
+    }
+
+    input, select, button {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 7px;
+        border: 1px solid #cbd5e1;
+    }
+
+    button {
+        border: none;
+        background: #2563eb;
+        color: white;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .delete {
+        background: #dc2626;
+    }
+
+    .stock-btn {
+        background: #111827;
+    }
+
+    .search {
+        margin-bottom: 15px;
+    }
+
+    .product-row {
+        display: grid;
+        grid-template-columns: 90px 1fr 170px;
+        gap: 15px;
+        padding: 15px;
+        border-bottom: 1px solid #e5e7eb;
+        align-items: start;
+    }
+
+    .image-box {
+        width: 80px;
+        height: 80px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
         overflow: hidden;
-        box-shadow: 0 8px 20px rgba(0,0,0,.08);
     }
 
-    .top {
-        height: 140px;
-        background: linear-gradient(135deg,#4f46e5,#7c3aed);
+    .image-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
-    .body {
-        padding: 20px;
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
     }
 
-    .price {
-        color: #16a34a;
-        font-weight: bold;
-        font-size: 20px;
+    .actions {
+        display: grid;
+        gap: 8px;
     }
 
-    .stock {
-        margin-top: 10px;
+    .stock-bar {
+        height: 10px;
         background: #e5e7eb;
-        height: 12px;
-        border-radius: 20px;
+        border-radius: 99px;
         overflow: hidden;
+        margin-bottom: 8px;
     }
 
-    .fill {
+    .stock-fill {
         height: 100%;
         background: #16a34a;
     }
 
-    .form-card {
-        background: white;
-        padding: 25px;
-        border-radius: 20px;
-        margin-bottom: 25px;
+    .low {
+        color: #dc2626;
+        font-weight: 900;
     }
 
-    input, select, button {
+    .ok {
+        color: #16a34a;
+        font-weight: 900;
+    }
+
+    .error {
+        background: #fee2e2;
+        color: #991b1b;
         padding: 12px;
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        margin-bottom: 10px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-weight: bold;
     }
 
-    button {
-        background: #4f46e5;
-        color: white;
-        border: none;
+    @@media(max-width: 1100px) {
+        .page-grid, .product-row, .form-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
-<div class="form-card">
-    <h2>Add Product</h2>
+@if (TempData["Error"] != null)
+{
+    <div class="error">@TempData["Error"]</div>
+}
 
-    <form method="post" action="/Products/Create">
+<div class="page-grid">
+    <div class="panel">
+        <h2>Add Product</h2>
 
-        <input name="Name" placeholder="Product Name" required />
+        <form method="post" action="/Products/Create" enctype="multipart/form-data">
+            <input name="Name" placeholder="Product name" required />
+            <input name="Barcode" placeholder="Barcode / Code" />
+            <input name="Price" type="number" step="0.01" placeholder="Price" required />
+            <input name="StockQuantity" type="number" placeholder="Stock quantity" required />
+            <input name="LowStockLevel" type="number" value="5" placeholder="Low stock level" />
 
-        <input name="Price" type="number" step="0.01" placeholder="Price" required />
+            <select name="CategoryId" required>
+                <option value="">Select category</option>
+                @foreach (var cat in categories)
+                {
+                    <option value="@cat.Id">@cat.Name</option>
+                }
+            </select>
 
-        <input name="StockQuantity" type="number" placeholder="Stock Quantity" required />
+            <input name="imageFile" type="file" accept="image/*" />
 
-        <select name="CategoryId" required>
-            <option value="">Select Category</option>
+            <button type="submit">Save Product</button>
+        </form>
+    </div>
 
-            @foreach(var cat in categories)
+    <div class="panel">
+        <h2>Manage Products</h2>
+
+        <input id="productSearch" class="search" placeholder="Search product..." onkeyup="filterProducts()" />
+
+        <div id="productList">
+            @foreach (var item in Model)
             {
-                <option value="@cat.Id">@cat.Name</option>
-            }
-        </select>
+                var updateFormId = "updateProduct" + item.Id;
+                var stockPercent = item.StockQuantity > 100 ? 100 : item.StockQuantity;
+                var isLow = item.StockQuantity <= item.LowStockLevel;
 
-        <button type="submit">Save Product</button>
+                <div class="product-row product-item">
+                    <div>
+                        <div class="image-box">
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <img src="@item.ImageUrl" />
+                            }
+                        </div>
+                    </div>
 
-    </form>
-</div>
+                    <div>
+                        <form id="@updateFormId" method="post" action="/Products/Update" enctype="multipart/form-data"></form>
 
-<div class="grid">
-    @foreach(var item in Model)
-    {
-        <div class="card">
-            <div class="top"></div>
+                        <input form="@updateFormId" type="hidden" name="Id" value="@item.Id" />
 
-            <div class="body">
-                <h3>@item.Name</h3>
+                        <div class="form-grid">
+                            <input form="@updateFormId" name="Name" value="@item.Name" />
+                            <input form="@updateFormId" name="Barcode" value="@item.Barcode" />
+                            <input form="@updateFormId" name="Price" type="number" step="0.01" value="@item.Price" />
+                            <input form="@updateFormId" name="StockQuantity" type="number" value="@item.StockQuantity" />
+                            <input form="@updateFormId" name="LowStockLevel" type="number" value="@item.LowStockLevel" />
 
-                <p>@item.Category?.Name</p>
+                            <select form="@updateFormId" name="CategoryId">
+                                @foreach (var cat in categories)
+                                {
+                                    if (cat.Id == item.CategoryId)
+                                    {
+                                        <option value="@cat.Id" selected>@cat.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@cat.Id">@cat.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
 
-                <div class="price">
-                    UGX @item.Price
-                </div>
+                        <input form="@updateFormId" name="imageFile" type="file" accept="image/*" />
 
-                <p>Stock: @item.StockQuantity</p>
+                        <div class="stock-bar">
+                            <div class="stock-fill" style="width:@stockPercent%"></div>
+                        </div>
 
-                <div class="stock">
-                    <div class="fill"
-                         style="width:@(item.StockQuantity > 100 ? 100 : item.StockQuantity)%">
+                        @if (isLow)
+                        {
+                            <div class="low">Low stock warning: @item.StockQuantity left</div>
+                        }
+                        else
+                        {
+                            <div class="ok">Stock okay: @item.StockQuantity left</div>
+                        }
+
+                        <small>Category: @item.Category?.Name</small>
+                    </div>
+
+                    <div class="actions">
+                        <button form="@updateFormId" type="submit">Update</button>
+
+                        <form method="post" action="/Products/AdjustStock">
+                            <input type="hidden" name="id" value="@item.Id" />
+                            <input name="adjustment" type="number" placeholder="+10 or -5" required />
+                            <button class="stock-btn" type="submit">Adjust Stock</button>
+                        </form>
+
+                        <form method="post" action="/Products/Delete/@item.Id"
+                              onsubmit="return confirm('Delete this product? Products with sales history cannot be deleted.')">
+                            <button class="delete" type="submit">Delete</button>
+                        </form>
                     </div>
                 </div>
-            </div>
+            }
         </div>
-    }
+    </div>
 </div>
+
+<script>
+    function filterProducts() {
+        let search = document.getElementById("productSearch").value.toLowerCase();
+        let products = document.querySelectorAll(".product-item");
+
+        products.forEach(product => {
+            product.style.display = product.innerText.toLowerCase().includes(search) ? "grid" : "none";
+        });
+    }
+</script>

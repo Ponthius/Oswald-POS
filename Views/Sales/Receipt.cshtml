@@ -28,6 +28,14 @@
             text-align: center;
         }
 
+        .center h2 {
+            margin-bottom: 5px;
+        }
+
+        .center p {
+            margin: 3px 0;
+        }
+
         .line {
             border-top: 1px dashed #111;
             margin: 12px 0;
@@ -37,6 +45,7 @@
             display: flex;
             justify-content: space-between;
             margin: 6px 0;
+            gap: 10px;
         }
 
         .total {
@@ -101,6 +110,8 @@
     <div class="receipt">
         <div class="center">
             <h2>OSWALD POS</h2>
+            <p>Tel: 0700 000 000</p>
+            <p>Location: Kampala, Uganda</p>
             <p>Mini Sales Receipt</p>
         </div>
 
@@ -109,6 +120,7 @@
         <p>Receipt: @Model.ReceiptNumber</p>
         <p>Date: @Model.SaleDate.ToString("dd MMM yyyy HH:mm")</p>
         <p>Customer: @(Model.Customer?.FullName ?? "Walk-in Customer")</p>
+        <p>Cashier: @(Model.Worker?.FullName ?? "Unknown")</p>
 
         <div class="line"></div>
 
